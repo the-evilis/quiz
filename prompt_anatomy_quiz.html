@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Квиз: Анатомия промпта</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; min-height: 100vh; padding: 2rem 1rem; color: #1a1a18; }
+.wrap { max-width: 680px; margin: 0 auto; }
+.quiz-header { margin-bottom: 2rem; }
+.quiz-header h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+.quiz-header p { font-size: 14px; color: #666; }
+.progress-bar-bg { height: 4px; background: #e0dfd8; border-radius: 4px; margin: 12px 0 0; }
+.progress-bar-fill { height: 4px; background: #534AB7; border-radius: 4px; transition: width 0.4s ease; }
+.question-card { background: #fff; border: 1px solid #e8e7e0; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+.q-num { font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.q-text { font-size: 15px; font-weight: 500; line-height: 1.55; margin-bottom: 1.25rem; }
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option-btn { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border: 1px solid #e8e7e0; border-radius: 8px; background: #fff; cursor: pointer; text-align: left; font-size: 14px; color: #1a1a18; line-height: 1.5; transition: background 0.15s, border-color 0.15s; font-family: inherit; }
+.option-btn:hover:not(.disabled) { background: #f5f4f0; border-color: #c8c7c0; }
+.option-btn .opt-letter { font-size: 12px; font-weight: 500; color: #999; min-width: 18px; padding-top: 1px; }
+.option-btn.correct { background: #EAF3DE; border-color: #639922; }
+.option-btn.correct .opt-letter { color: #3B6D11; }
+.option-btn.wrong { background: #FCEBEB; border-color: #E24B4A; }
+.option-btn.wrong .opt-letter { color: #A32D2D; }
+.option-btn.disabled { cursor: default; }
+.explanation { margin-top: 12px; padding: 10px 14px; background: #f0effe; border-radius: 8px; border-left: 3px solid #534AB7; font-size: 13px; color: #3C3489; line-height: 1.6; display: none; }
+.explanation.show { display: block; }
+.nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
+.btn { padding: 8px 20px; border: 1px solid #ccc; border-radius: 8px; background: transparent; color: #1a1a18; font-size: 14px; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+.btn:hover { background: #f0effe; }
+.btn.primary { background: #534AB7; color: #fff; border-color: #534AB7; }
+.btn.primary:hover { background: #3C3489; }
+.hidden { display: none; }
+.score-card { text-align: center; padding: 2.5rem 1.5rem; background: #fff; border: 1px solid #e8e7e0; border-radius: 12px; }
+.score-big { font-size: 52px; font-weight: 500; color: #534AB7; margin-bottom: 8px; }
+.score-label { font-size: 16px; color: #555; margin-bottom: 1.5rem; line-height: 1.5; }
+.score-breakdown { display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.score-item { font-size: 14px; color: #777; }
+.score-item span { font-weight: 500; color: #1a1a18; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="quiz-header">
+    <h1>Анатомия промпта для бизнес-задач</h1>
+    <p>10 вопросов · выберите правильный ответ</p>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress" style="width:0%"></div></div>
+  </div>
+  <div id="quiz-area"></div>
+  <div id="score-area" class="hidden"></div>
+</div>
+
+<script>
+const questions = [
+  {
+    q: "Какой элемент структуры промпта отвечает за установку ограничений, тональности и профессиональной экспертизы модели?",
+    opts: ["Входные данные (Input Data)", "Индикатор вывода (Output Indicator)", "Роль / Персона (Role / Persona)", "Ограничители (Delimiters)"],
+    answer: 2,
+    explanation: "Роль задаёт рамки поведения модели, активирует релевантные кластеры знаний в её весах и определяет тон общения."
+  },
+  {
+    q: "Зачем в профессиональном промптинге используются разделители (XML-теги, тройные кавычки)?",
+    opts: ["Чтобы снизить стоимость запроса по API", "Чтобы чётко отделить инструкции от пользовательских данных и избежать Prompt Injection", "Чтобы заставить модель отвечать быстрее", "Чтобы перевести модель в режим генерации кода"],
+    answer: 1,
+    explanation: "Разделители помогают модели понять, где заканчивается команда администратора и начинается текст клиента, который может содержать враждебные инструкции."
+  },
+  {
+    q: "Компонент «Контекст» (Context) — какую бизнес-задачу он решает?",
+    opts: ["Задаёт жёсткий формат ответа (число символов)", "Передаёт фоновую информацию: аудиторию, специфику продукта, цели бизнеса", "Содержит Few-shot примеры идеальных ответов", "Активирует внутренние формулы для подсчёта токенов"],
+    answer: 1,
+    explanation: "Контекст даёт модели понимание «зачем» и «для кого» выполняется задача, что резко снижает количество абстрактных и бесполезных ответов."
+  },
+  {
+    q: "Какую стратегию промптинга вы используете, добавляя блок «Примеры» с парами «Вход / Выход»?",
+    opts: ["Zero-shot prompting", "Few-shot prompting", "Chain-of-Thought (CoT)", "Meta-prompting"],
+    answer: 1,
+    explanation: "Добавление 2–5 примеров идеального соответствия «запрос → ответ» — это классический Few-shot, который кардинально улучшает следование стилю."
+  },
+  {
+    q: "Какое главное правило написания блока «Task / Instruction» для ИИ-автоматизаций?",
+    opts: ["Инструкция должна быть максимально абстрактной, чтобы ИИ проявил творчество", "Инструкция должна содержать глаголы действия (Извлеки, Классифицируй) и пошаговый алгоритм", "Инструкция обязательно должна включать вежливые слова «пожалуйста»", "Инструкция должна занимать не менее 80% объёма промпта"],
+    answer: 1,
+    explanation: "Чёткие императивные команды и разбивка сложного процесса на шаги (Step-by-step) гарантируют предсказуемый результат в n8n или Make."
+  },
+  {
+    q: "Вы строите автоматическую цепочку n8n — результат должен записываться в Google Таблицу или CRM. Какой формат вывода указать в промпте?",
+    opts: ["Markdown с жирным шрифтом и списками", "Валидный JSON-объект с заданными ключами", "Аудиофайл с ответом", "Простой сплошной текст без абзацев"],
+    answer: 1,
+    explanation: "JSON позволяет n8n мгновенно разобрать ответ ИИ на переменные и передать их дальше по цепочке."
+  },
+  {
+    q: "Что такое «Негативные ограничения» (Negative Constraints) в анатомии промпта?",
+    opts: ["Критика модели за плохо выполненную работу", "Чёткий список того, чего модель делать НЕ должна (например: «НЕ выдумывай факты»)", "Уменьшение параметра температуры до минимума", "Удаление из промпта всех знаков препинания"],
+    answer: 1,
+    explanation: "Блок «Чего избегать» критически важен в бизнесе, чтобы ИИ не додумывал условия акций и не хамил клиентам."
+  },
+  {
+    q: "Техника Chain-of-Thought: фраза «Думай пошагово» относится к какому блоку промпта?",
+    opts: ["Инструкция по мышлению / Логический триггер (Reasoning Trigger)", "Блок метаданных (Metadata)", "Входной токен безопасности (Safety Token)", "Форматирование списков"],
+    answer: 0,
+    explanation: "Эта простая фраза заставляет модель генерировать токены рассуждения, что резко повышает точность сложных вычислений."
+  },
+  {
+    q: "Вы передаёте ИИ документ на 20 страниц и просите отвечать ТОЛЬКО на его основе. Как называется этот принцип?",
+    opts: ["Открытый контекст (Open-world assumption)", "Принцип замкнутого мира / Context grounding (Closed-domain)", "Температурный сдвиг (Temperature shift)", "Глубокое обучение (Deep learning)"],
+    answer: 1,
+    explanation: "Grounding гарантирует, что ИИ строит ответы исключительно на основе вашего текста, минимизируя галлюцинации. Это основа RAG-систем."
+  },
+  {
+    q: "Какая ошибка чаще всего приводит к тому, что ИИ «забывает» часть инструкций в длинном диалоге?",
+    opts: ["Неправильный выбор кодировки JSON", "Выход за пределы контекстного окна или размытие инструкций длинными входными данными", "Использование английского языка вместо русского", "Слишком высокая скорость отправки API-запросов"],
+    answer: 1,
+    explanation: "Если промпт огромный, инструкции в начале «теряются» в весах внимания (Lost in the Middle) либо вылетают из контекстного окна."
+  }
+];
+
+const letters = ['А','Б','В','Г'];
+let current = 0, score = 0, answered = false;
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+  document.getElementById('progress').style.width = ((current / questions.length) * 100) + '%';
+  let html = `<div class="question-card">
+    <div class="q-num">Вопрос ${current+1} из ${questions.length}</div>
+    <div class="q-text">${q.q}</div>
+    <div class="options">`;
+  q.opts.forEach((opt, i) => {
+    html += `<button class="option-btn" onclick="choose(${i})" id="opt-${i}">
+      <span class="opt-letter">${letters[i]}</span><span>${opt}</span>
+    </button>`;
+  });
+  html += `</div><div class="explanation" id="explanation">${q.explanation}</div></div>
+  <div class="nav-row">
+    <span style="font-size:13px;color:#999">Правильных: ${score} / ${current}</span>
+    <button class="btn primary hidden" id="next-btn" onclick="nextQuestion()">
+      ${current+1 < questions.length ? 'Следующий вопрос →' : 'Посмотреть результат →'}
+    </button>
+  </div>`;
+  document.getElementById('quiz-area').innerHTML = html;
+}
+
+function choose(idx) {
+  if (answered) return;
+  answered = true;
+  const q = questions[current];
+  for (let i = 0; i < q.opts.length; i++) {
+    const btn = document.getElementById('opt-'+i);
+    btn.classList.add('disabled');
+    if (i === q.answer) btn.classList.add('correct');
+    else if (i === idx && idx !== q.answer) btn.classList.add('wrong');
+  }
+  if (idx === q.answer) score++;
+  document.getElementById('explanation').classList.add('show');
+  document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) showScore();
+  else renderQuestion();
+}
+
+function showScore() {
+  document.getElementById('progress').style.width = '100%';
+  document.getElementById('quiz-area').innerHTML = '';
+  const pct = Math.round((score / questions.length) * 100);
+  const msg = pct >= 90 ? 'Отличный результат! Вы отлично знаете анатомию промптов.' :
+              pct >= 70 ? 'Хороший результат! Есть пара тем для повторения.' :
+              pct >= 50 ? 'Неплохо! Стоит повторить материал курса.' :
+              'Рекомендуем пересмотреть лекцию по анатомии промпта.';
+  document.getElementById('score-area').innerHTML = `
+    <div class="score-card">
+      <div class="score-big">${score}/${questions.length}</div>
+      <div class="score-label">${msg}</div>
+      <div class="score-breakdown">
+        <div class="score-item">Правильно: <span style="color:#3B6D11">${score}</span></div>
+        <div class="score-item">Неправильно: <span style="color:#A32D2D">${questions.length-score}</span></div>
+        <div class="score-item">Результат: <span>${pct}%</span></div>
+      </div>
+      <button class="btn primary" onclick="restart()">Пройти ещё раз</button>
+    </div>`;
+  document.getElementById('score-area').classList.remove('hidden');
+}
+
+function restart() {
+  current = 0; score = 0; answered = false;
+  document.getElementById('score-area').classList.add('hidden');
+  document.getElementById('score-area').innerHTML = '';
+  document.getElementById('progress').style.width = '0%';
+  renderQuestion();
+}
+
+renderQuestion();
+</script>
+</body>
+</html>
